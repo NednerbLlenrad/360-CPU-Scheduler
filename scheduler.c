@@ -44,9 +44,6 @@ uint32_t TOTAL_NUMBER_OF_CYCLES_SPENT_BLOCKED = 0; // The total cycles in the bl
 const char* RANDOM_NUMBER_FILE_NAME= "random-numbers";
 const uint32_t SEED_VALUE = 200;  // Seed value for reading from file
 
-// Additional variables as needed
-
-
 /**
  * Reads a random non-negative integer X from a file with a given line named random-numbers (in the current directory)
  */
@@ -82,7 +79,7 @@ void parseFile(const char *filename, _process process_list[], uint32_t *num_proc
     if (fgets(line, sizeof(line), input)) {
         // Read the first token as the number of processes
         sscanf(line, "%u", num_processes);
-        //printf("The original input was: %u\n", *num_processes);  
+        //printf("The original input was: %u\n", *num_processes); //Debug print statement 
         TOTAL_CREATED_PROCESSES = *num_processes;
         uint32_t process_index = 0;
         uint32_t A, B, C, M;
@@ -137,10 +134,6 @@ void parseFile(const char *filename, _process process_list[], uint32_t *num_proc
     fclose(input);
 }
 
-
-
-
-
 /**
  * Reads a random non-negative integer X from a file named random-numbers.
  * Returns the CPU Burst: : 1 + (random-number-from-file % upper_bound)
@@ -155,9 +148,7 @@ uint32_t randomOS(uint32_t upper_bound, uint32_t process_indx, FILE* random_num_
     return returnValue;
 } 
 
-
 /********************* SOME PRINTING HELPERS *********************/
-
 
 /**
  * Prints to standard output the original input
@@ -261,10 +252,10 @@ void printSummaryData(_process process_list[])
 /*Simulation Functions*/
 /*First Come First Serve*/
 void simFCFS(_process process_list[], uint32_t num_processes, FILE* random_num_file_ptr) {
-    uint32_t time = 0;  // Local time variable for the simulation
+    uint32_t time = 0;  
     uint32_t finished_count = 0;
-    uint32_t total_io_time = 0; // To track total I/O time for all processes
-    uint32_t total_cpu_time = 0; // To track total CPU time for utilization calculations
+    uint32_t total_io_time = 0; 
+    uint32_t total_cpu_time = 0; 
 
     printf("Running FCFS Scheduler with %u processes\n", num_processes);
 
@@ -273,68 +264,68 @@ void simFCFS(_process process_list[], uint32_t num_processes, FILE* random_num_f
         for (uint32_t i = 0; i < num_processes; i++) {
             _process *proc = &process_list[i];
 
-            // Set process to ready if it has arrived
+            // Set process to ready 
             if (proc->status == 0 && proc->A <= time) {
                 proc->status = 1; // Ready state
             }
 
-            // If the process is in the ready state, move it to running
+            // If ready, then move to running
             if (proc->status == 1) {
-                proc->status = 2; // Running state
+                proc->status = 2;
                 proc->CPUBurst = randomOS(proc->B, proc->processID, random_num_file_ptr); // Get CPU burst time
 
-                // Process execution simulation
+                // Process execution
                 while (proc->CPUBurst > 0 && proc->currentCPUTimeRun < proc->C) {
                     proc->CPUBurst--;
                     proc->currentCPUTimeRun++;
                     time++;
-                    CURRENT_CYCLE++; // Increment the global CURRENT_CYCLE during execution
-                    total_cpu_time++; // Increment total CPU time for utilization calculation
+                    CURRENT_CYCLE++; 
+                    total_cpu_time++;
                 }
 
-                // Check if process finished total CPU time
+                // Check if process finished, then progress
                 if (proc->currentCPUTimeRun == proc->C) {
                     proc->status = 4; // Finished state
                     proc->finishingTime = time; // Set finishing time
-                    proc->currentWaitingTime = (proc->finishingTime - proc->A - proc->currentCPUTimeRun); // Calculate waiting time
-                    finished_count++; // Move to next process
+                    proc->currentWaitingTime = (proc->finishingTime - proc->A - proc->currentCPUTimeRun);
+                    finished_count++; 
                 } else {
-                    // If process still has remaining CPU time, move it to blocked state for I/O
-                    proc->status = 3; // Blocked state (I/O)
-                    proc->IOBurst = randomOS(proc->M, proc->processID, random_num_file_ptr); // Get I/O burst time
+                    // If process has not used all CPU time, then set state to blocked
+                    proc->status = 3; 
+                    proc->IOBurst = randomOS(proc->M, proc->processID, random_num_file_ptr); 
                 }
             }
 
-            // If process is in blocked state (I/O), simulate I/O burst
+            // If process is blocked, then IOburst
             if (proc->status == 3) {
                 if (proc->IOBurst > 0) {
                     proc->IOBurst--;
-                    proc->currentIOBlockedTime++;  // Track total I/O time for the current process
-                    total_io_time++; // Increment total I/O time across all processes
-                    TOTAL_NUMBER_OF_CYCLES_SPENT_BLOCKED++; // Increment the total blocked cycles
+                    proc->currentIOBlockedTime++; 
+                    total_io_time++; 
+                    TOTAL_NUMBER_OF_CYCLES_SPENT_BLOCKED++; 
                 }
 
                 if (proc->IOBurst == 0) {
-                    proc->status = 1; // Move back to ready state after I/O
+                    proc->status = 1; 
                 }
             }
         }
-
-        // Increment time for the next cycle if no process is running
+        
         if (finished_count < num_processes) {
             time++;
         }
     }
 
 }
+
 /*Round Robin*/
 void simRR(_process process_list[], uint32_t num_processes, uint32_t quantum, FILE* random_num_file_ptr) {
     uint32_t time = 0;
     uint32_t finished_count = 0;
     
-    //printf("Entering RR...\n");
+    //printf("Entering RR...\n"); //Debug print statement
     
-    // Initialize quantum for each process
+    // Initialize quantum for processes
     for (uint32_t i = 0; i < num_processes; i++) {
         process_list[i].quantum = quantum;
     }
@@ -345,70 +336,67 @@ void simRR(_process process_list[], uint32_t num_processes, uint32_t quantum, FI
 
         for (uint32_t i = 0; i < num_processes; i++) {
             _process *proc = &process_list[i];
-            //printf("Time: %d, Simulating process %d, Status: %d, Quantum: %d, CPUBurst: %d\n", time, i, proc->status, proc->quantum, proc->CPUBurst);
+            //printf("Time: %d, Simulating process %d, Status: %d, Quantum: %d, CPUBurst: %d\n", time, i, proc->status, proc->quantum, proc->CPUBurst); //Debug print statement
 
-            // Process arrives and moves to ready state
+            // Move to ready
             if (proc->status == 0 && proc->A <= time) {
-                proc->status = 1; // Ready state
-                //printf("Process %d ready.\n", i);
+                proc->status = 1; 
+                //printf("Process %d ready.\n", i); //Debug print statement
             }
 
-            // If the process is in ready state, move it to running
+            //Move to running from ready
             if (proc->status == 1) {
-                all_blocked = false;  // There's at least one process ready
-                if (proc->CPUBurst == 0) {  // If no burst time is set
+                all_blocked = false;  //processes ready >= 1
+                if (proc->CPUBurst == 0) {  
                     proc->CPUBurst = randomOS(proc->B, proc->processID, random_num_file_ptr);
-                    //printf("Process %d new CPU burst: %d\n", i, proc->CPUBurst);
+                    //printf("Process %d new CPU burst: %d\n", i, proc->CPUBurst); //Debug print statement
                 }
-                proc->status = 2; // Running state
-                //printf("Process %d running.\n", i);                
-                // Execute for one unit of time
+                proc->status = 2; 
+                //printf("Process %d running.\n", i); //Debug print statement               
                 proc->CPUBurst--;
                 proc->currentCPUTimeRun++;
                 proc->quantum--;
-
                 time++;
                 CURRENT_CYCLE++;
 
-                // Process completed CPU burst
+                // Moved to blocked from completed CPUBurst
                 if (proc->CPUBurst == 0) {
-                    proc->status = 3; // Blocked state
-                    proc->IOBurst = randomOS(proc->M, proc->processID, random_num_file_ptr); // Simulate I/O burst based on multiplier
-                    //printf("Process %d blocked with IO burst: %d.\n", i, proc->IOBurst);  
+                    proc->status = 3; 
+                    proc->IOBurst = randomOS(proc->M, proc->processID, random_num_file_ptr); 
+                    //printf("Process %d blocked with IO burst: %d.\n", i, proc->IOBurst); //Debug print statement 
                 }
 
-                // Process finished total execution
+                // Finished process
                 if (proc->currentCPUTimeRun == proc->C) {
                     proc->status = 4; // Finished
                     proc->finishingTime = time;
                     proc->currentWaitingTime = time - proc->A - proc->currentCPUTimeRun;
                     finished_count++;
-                    //printf("Process %d finished.\n", i);  
+                    //printf("Process %d finished.\n", i);  //Debug print statement
                 }
 
-                // Quantum exhausted but process not finished, move back to ready
+                // Quantum empty, move to ready
                 if (proc->quantum == 0 && proc->status != 4) {
-                    proc->status = 1; // Back to ready state
-                    proc->quantum = quantum; // Reset quantum for next cycle
-                    //printf("Process %d quantum expired, moving back to ready.\n", i);
+                    proc->status = 1; 
+                    proc->quantum = quantum;
+                    //printf("Process %d quantum expired, moving back to ready.\n", i); //Debug print statement
                 }
             }
 
-            // Handle blocked processes (simulate I/O burst)
+            // Handle blocked processes 
             if (proc->status == 3) {
-                proc->IOBurst--;  // Simulate I/O burst time
-                //printf("Process %d in IO, IO burst remaining: %d\n", i, proc->IOBurst);
+                proc->IOBurst--;  
+                //printf("Process %d in IO, IO burst remaining: %d\n", i, proc->IOBurst); //Debug print statement
                 if (proc->IOBurst == 0) {
                     proc->status = 1;  // Move back to ready after I/O
-                    proc->quantum = quantum; // Reset quantum after I/O completion
-                    //printf("Process %d IO complete, moving to ready.\n", i);
+                    proc->quantum = quantum; 
+                    //printf("Process %d IO complete, moving to ready.\n", i); //Debug print statement
                 }
             }
         }
 
-        // If all processes are blocked, time must still advance
         if (finished_count < num_processes && all_blocked) {
-            //printf("All processes blocked, advancing time.\n");
+            //printf("All processes blocked, advancing time.\n"); //Debug print statement
             time++;
         }
     }
@@ -419,13 +407,14 @@ void simRR(_process process_list[], uint32_t num_processes, uint32_t quantum, FI
 void simSJF(_process process_list[], uint32_t num_processes, FILE *random_num_file_ptr) {
     uint32_t time = 0;
     uint32_t finished_count = 0;
-    uint32_t total_io_time = 0; // Total I/O time for utilization
-    uint32_t total_cpu_time = 0; // Total CPU time for utilization
+    uint32_t total_io_time = 0; 
+    uint32_t total_cpu_time = 0; 
 
-    printf("Running SJF Scheduler with %u processes\n", num_processes);
+    printf("Running SJF Scheduler with %u processes\n", num_processes); 
 
+    //loop through processes using shortest job first
     while (finished_count < num_processes) {
-        _process *shortest = NULL;
+        _process *shortest = NULL; //Assign dummy shortest job pointer
 
         // Check for available processes to run
         for (uint32_t i = 0; i < num_processes; ++i) {
@@ -433,7 +422,7 @@ void simSJF(_process process_list[], uint32_t num_processes, FILE *random_num_fi
 
             // Set process to ready if it has arrived
             if (proc->status == 0 && proc->A <= time) {
-                proc->status = 1; // Ready state
+                proc->status = 1;
             }
 
             // Finding the shortest job among ready processes
@@ -454,40 +443,39 @@ void simSJF(_process process_list[], uint32_t num_processes, FILE *random_num_fi
                 shortest->CPUBurst--;
                 shortest->currentCPUTimeRun++;
                 time++;
-                total_cpu_time++; // Increment total CPU time for utilization calculation
+                total_cpu_time++; 
             }
 
             // Check if process finished total CPU time
             if (shortest->currentCPUTimeRun == shortest->C) {
-                shortest->status = 4; // Finished state
-                shortest->finishingTime = time; // Set finishing time
-                shortest->currentWaitingTime = (shortest->finishingTime - shortest->A - shortest->currentCPUTimeRun); // Calculate waiting time
-                finished_count++; // Move to the next process
+                shortest->status = 4;
+                shortest->finishingTime = time; 
+                shortest->currentWaitingTime = (shortest->finishingTime - shortest->A - shortest->currentCPUTimeRun); 
+                finished_count++;
             } else {
-                // If process still has remaining CPU time, move it to blocked state for I/O
-                shortest->status = 3; // Blocked state (I/O)
-                shortest->IOBurst = randomOS(shortest->M, shortest->processID, random_num_file_ptr); // Get I/O burst time
+                // If there is still CPU Time, then move to blocked
+                shortest->status = 3;
+                shortest->IOBurst = randomOS(shortest->M, shortest->processID, random_num_file_ptr);
             }
         }
 
-        // Increment time for the next cycle if no process is running
-        if (finished_count < num_processes) {
+       if (finished_count < num_processes) {
             time++;
         }
 
-        // Track I/O time for any blocked processes
+        // Track I/O time blocked processes
         for (uint32_t i = 0; i < num_processes; ++i) {
             _process *proc = &process_list[i];
 
-            if (proc->status == 3) { // If in blocked state (I/O)
+            if (proc->status == 3) { 
                 if (proc->IOBurst > 0) {
                     proc->IOBurst--;
-                    proc->currentIOBlockedTime++;  // Track total I/O time for the current process
-                    total_io_time++; // Increment total I/O time across all processes
+                    proc->currentIOBlockedTime++;  
+                    total_io_time++; 
                 }
-
+                //Move back to readyt
                 if (proc->IOBurst == 0) {
-                    proc->status = 1; // Move back to ready state after I/O
+                    proc->status = 1; 
                 }
             }
         }
@@ -497,15 +485,15 @@ void simSJF(_process process_list[], uint32_t num_processes, FILE *random_num_fi
 /*Reset process state*/
 void resetProcessStates(_process process_list[], uint32_t num_processes) {
     for (uint32_t i = 0; i < num_processes; ++i) {
-        process_list[i].status = 0; // Reset status to unstarted
-        process_list[i].finishingTime = -1; // Reset finishing time
-        process_list[i].currentCPUTimeRun = 0; // Reset CPU time run
-        process_list[i].currentIOBlockedTime = 0; // Reset I/O blocked time
-        process_list[i].currentWaitingTime = 0; // Reset waiting time
-        process_list[i].IOBurst = 0; // Reset I/O burst
-        process_list[i].CPUBurst = 0; // Reset CPU burst
-        process_list[i].quantum = 0; // Reset quantum
-        process_list[i].isFirstTimeRunning = true; // Reset running flag
+        process_list[i].status = 0; 
+        process_list[i].finishingTime = -1; 
+        process_list[i].currentCPUTimeRun = 0; 
+        process_list[i].currentIOBlockedTime = 0;
+        process_list[i].currentWaitingTime = 0;
+        process_list[i].IOBurst = 0; 
+        process_list[i].CPUBurst = 0;
+        process_list[i].quantum = 0; 
+        process_list[i].isFirstTimeRunning = true; 
     }
 }
 
